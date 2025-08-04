@@ -555,7 +555,7 @@ window.onload = () => {
         }
     });
     selectSubsectionBtn.addEventListener('click', () => {
-        if (!selectSubsectionBtn.disabled) showAddHierarchyModal('subsection');
+        if (!selectSubsectionBtn.disabled) {
             showAddHierarchyModal('subsection');
         }
     });
