@@ -158,3 +158,49 @@ body {
     outline: none;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
+
+/*
+ * General Polishing Tweaks
+ */
+body { /* background already set in your file, so you can skip or adjust */ }
+main > .bg-white {
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+#main-header {
+  font-size: 2.5rem;
+  color: #1F2937;
+}
+.timeline-content .flex.items-center {
+  padding: 1rem 0.5rem;
+}
+.collapsible-header {
+  background: #FFFFFF;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #E5E7EB;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.collapsible-header:hover {
+  background: #F9FAFB;
+}
+.sidebar-icon-btn:hover,
+.sidebar-icon-btn.active {
+  background-color: #E5E7EB;
+  color: #1F2937;
+}
+.modal-input {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.modal-input:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+.task-bar:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+button {
+  cursor: pointer;
+}
+
