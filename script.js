@@ -38,7 +38,7 @@ window.onload = () => {
     const confirmModal = document.getElementById('confirm-modal');
     const confirmOkBtn = document.getElementById('confirm-ok-btn');
     const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
-
+    
     // --- Data Variables ---
     let sites = [];
     let tasks = [];
@@ -468,10 +468,49 @@ window.onload = () => {
                 selectedSiteId = newSiteId;
             } else if (hierarchyTypeToAdd === 'phase') {
                 if (!phases.includes(name)) phases.push(name);
+                tasks.push({
+                    id: Date.now().toString(),
+                    siteId: selectedSiteId,
+                    taskName: name,
+                    phase: name,
+                    section: null,
+                    subSection: null,
+                    dueDate: null,
+                    endDate: null,
+                    actualStartDate: null,
+                    actualEndDate: null,
+                    dependentOnTaskId: null
+                });
             } else if (hierarchyTypeToAdd === 'section') {
                 if (!sections.includes(name)) sections.push(name);
+                 tasks.push({
+                    id: Date.now().toString(),
+                    siteId: selectedSiteId,
+                    taskName: name,
+                    phase: window.parentHierarchyId,
+                    section: name,
+                    subSection: null,
+                    dueDate: null,
+                    endDate: null,
+                    actualStartDate: null,
+                    actualEndDate: null,
+                    dependentOnTaskId: null
+                });
             } else if (hierarchyTypeToAdd === 'subsection') {
                 if (!subsections.includes(name)) subsections.push(name);
+                tasks.push({
+                    id: Date.now().toString(),
+                    siteId: selectedSiteId,
+                    taskName: name,
+                    phase: tasks.find(t => t.section === window.parentHierarchyId).phase,
+                    section: window.parentHierarchyId,
+                    subSection: name,
+                    dueDate: null,
+                    endDate: null,
+                    actualStartDate: null,
+                    actualEndDate: null,
+                    dependentOnTaskId: null
+                });
             }
             saveToLocalStorage();
             renderSites();
@@ -503,7 +542,11 @@ window.onload = () => {
         if (window.parentHierarchyType === 'site') {
             showAddHierarchyModal('phase');
         } else {
-            showAddItemMenu(window.parentHierarchyId, window.parentHierarchyType);
+            const parentTask = tasks.find(t => t.id === window.parentHierarchyId);
+            const parentPhase = parentTask ? parentTask.phase : '';
+            window.parentHierarchyId = parentPhase;
+            window.parentHierarchyType = 'phase';
+            showAddHierarchyModal('phase');
         }
     });
     selectSectionBtn.addEventListener('click', () => {
