@@ -417,7 +417,7 @@ window.onload = () => {
         if (type === 'site') title = `Enter a new site name:`;
         addHierarchyTitle.textContent = title;
         hierarchyNameInput.value = '';
-        window.hierarchyTypeToAdd = type;
+        hierarchyTypeToAdd = type;  
         addItemSelectionModal.classList.add('hidden');
         addHierarchyModal.classList.remove('hidden');
         hierarchyNameInput.focus();
