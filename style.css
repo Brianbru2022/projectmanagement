@@ -1,0 +1,167 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6; /* bg-gray-100 */
+}
+
+/* Helper class for smooth transitions */
+.transition-all {
+    transition: all 0.3s ease-in-out;
+}
+
+/* --- Timeline & Task Bar Enhancements --- */
+.timeline-container {
+    position: relative;
+    overflow-x: auto;
+    width: 100%;
+}
+
+.task-bar {
+    position: absolute;
+    height: 28px; /* Slightly taller */
+    top: 6px;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.task-bar-due {
+    background-color: #A5B4FC; /* Indigo-300 for a softer look */
+    z-index: 5;
+}
+
+.task-bar-actual {
+    height: 20px;
+    top: 10px;
+    z-index: 6;
+    background-color: #3B82F6; /* Blue-500 */
+    box-shadow: none;
+}
+
+.task-bar-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+}
+
+.today-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #EF4444; /* Red-500 */
+    z-index: 10;
+}
+
+/* --- Hierarchy View --- */
+.hierarchy-item-container {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 8px 0;
+}
+
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.collapsible-content {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.4s ease-out;
+}
+
+.collapsible-content.expanded {
+    max-height: 2000px; /* Large value for smooth transition */
+}
+
+.add-icon-group {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.hierarchy-item-container:hover .add-icon-group {
+    opacity: 1;
+}
+
+/* --- Modal Enhancements --- */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(17, 24, 39, 0.6); /* bg-gray-900 with opacity */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    display: none; /* Changed from 'hidden' class */
+}
+
+.modal-content {
+    background: white;
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 90%;
+    max-width: 500px; /* max-w-md */
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem; /* p-6 */
+    border-bottom: 1px solid #E5E7EB; /* border-gray-200 */
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem; /* gap-2 */
+    padding: 1rem 1.5rem;
+    background-color: #F9FAFB; /* bg-gray-50 */
+    border-top: 1px solid #E5E7EB;
+}
+
+.modal-close-btn {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #9CA3AF;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.modal-close-btn:hover {
+    color: #1F2937;
+}
+
+/* --- Toast Notification Styling --- */
+.toast {
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideIn 0.5s forwards;
+}
+
+.toast.success { background-color: #10B981; /* Green-500 */ }
+.toast.error { background-color: #EF4444; /* Red-500 */ }
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
