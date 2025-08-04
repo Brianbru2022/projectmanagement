@@ -3,8 +3,10 @@
  */
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #F9FAFB;
+    background-color: #F3F4F6;  /* Updated for slightly darker overall background */
     color: #374151; /* Darker, more professional text */
+    margin: 0;
+    padding: 0;
 }
 
 /*
@@ -19,6 +21,9 @@ body {
     border-radius: 12px; /* More rounded corners */
     color: #6B7280;
     transition: all 0.2s;
+    background: none;
+    border: none;
+    cursor: pointer;
 }
 .sidebar-icon-btn:hover {
     background-color: #E5E7EB;
@@ -27,7 +32,7 @@ body {
 .sidebar-icon-btn.active {
     background-color: #DBEAFE;
     color: #1D4ED8;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 }
 
 /*
@@ -75,10 +80,6 @@ body {
     cursor: pointer;
     transition: all 0.2s ease-in-out;
 }
-.task-bar:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transform: translateY(-2px);
-}
 .task-bar-due {
     background: #3B82F6; /* Use solid color for simplicity */
     z-index: 5;
@@ -88,6 +89,10 @@ body {
     background: #10B981;
     transition: all 0.2s ease-in-out;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.task-bar:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
 }
 /* Status Colors */
 .status-not-started-not-due { background-color: #3B82F6; }
@@ -141,6 +146,8 @@ body {
     color: #4B5563;
     transition: background-color 0.2s, box-shadow 0.2s;
     box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06);
+    border: none;
+    cursor: pointer;
 }
 .selection-button:hover {
     background-color: #E5E7EB;
@@ -156,51 +163,48 @@ body {
 .modal-input:focus {
     border-color: #3B82F6;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
 }
 
-/*
- * General Polishing Tweaks
- */
-body { /* background already set in your file, so you can skip or adjust */ }
+/* ---------------------------------------------------
+   Professional “Polish” Tweaks
+   (Drop these at the end of your file or inline)
+   --------------------------------------------------- */
+
+/* Card-style main container */
 main > .bg-white {
-  border-radius: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
+
+/* Bigger, bolder header */
 #main-header {
-  font-size: 2.5rem;
-  color: #1F2937;
+    font-size: 2.5rem;
+    color: #1F2937;
 }
+
+/* Extra padding on each timeline row */
 .timeline-content .flex.items-center {
-  padding: 1rem 0.5rem;
+    padding: 1rem 0.5rem;
 }
+
+/* Refined collapsible headers */
 .collapsible-header {
-  background: #FFFFFF;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #E5E7EB;
-  cursor: pointer;
-  transition: background 0.2s;
+    background: #FFFFFF;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #E5E7EB;
+    transition: background 0.2s;
 }
 .collapsible-header:hover {
-  background: #F9FAFB;
-}
-.sidebar-icon-btn:hover,
-.sidebar-icon-btn.active {
-  background-color: #E5E7EB;
-  color: #1F2937;
-}
-.modal-input {
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.modal-input:focus {
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-.task-bar:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-button {
-  cursor: pointer;
+    background: #F9FAFB;
 }
 
+/* Ensure all buttons show pointer on hover */
+button {
+    cursor: pointer;
+}
+
+/* Smooth focus ring on modals */
+.modal-input {
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
