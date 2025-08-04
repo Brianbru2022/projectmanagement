@@ -86,12 +86,23 @@ window.onload = () => {
             if (task.actualEndDate) {
                 return 'status-finished';
             }
-            const expectedDuration = now.getTime() - dueDate.getTime();
+            const expectedDuration = new Date(task.endDate).getTime() - dueDate.getTime();
             const actualDuration = now.getTime() - actualStartDate.getTime();
-            if (actualDuration < expectedDuration) {
+            
+            // Compare actual progress vs expected progress
+            const totalPlannedDuration = new Date(task.endDate).getTime() - dueDate.getTime();
+            if (totalPlannedDuration <= 0) return 'status-started-on-program';
+            
+            const plannedDaysPassed = (now.getTime() - dueDate.getTime());
+            const plannedProgressPercentage = plannedDaysPassed / totalPlannedDuration;
+            
+            const actualDaysPassed = (now.getTime() - actualStartDate.getTime());
+            const actualProgressPercentage = actualDaysPassed / totalPlannedDuration;
+
+            if (actualProgressPercentage < plannedProgressPercentage) {
+                 return 'status-started-behind';
+            } else if (actualProgressPercentage > plannedProgressPercentage) {
                 return 'status-started-ahead';
-            } else if (actualDuration > expectedDuration) {
-                return 'status-started-behind';
             } else {
                 return 'status-started-on-program';
             }
@@ -150,143 +161,177 @@ window.onload = () => {
         
         if (filteredTasks.length === 0 && selectedSiteId) {
             noTasksMessage.classList.remove('hidden');
-        } else {
-            noTasksMessage.classList.add('hidden');
-
-            const allDates = filteredTasks.flatMap(task => [new Date(task.dueDate), new Date(task.endDate)]);
-            if (allDates.length === 0) {
-                const selectedSite = sites.find(s => s.id === selectedSiteId);
-                if (selectedSite) {
-                    const siteDiv = createCollapsibleDiv(selectedSite.name, 'site', 0, selectedSiteId);
-                    taskListView.appendChild(siteDiv);
-                }
-                return;
-            }
-            
-            const minDate = new Date(Math.min(...allDates));
-            const maxDate = new Date(Math.max(...allDates));
-            const timelineStart = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
-            const timelineEnd = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
-            
-            // Add padding to the timeline
-            timelineStart.setDate(timelineStart.getDate() - 7);
-            timelineEnd.setDate(timelineEnd.getDate() + 7);
-
-            const totalDays = Math.ceil((timelineEnd - timelineStart) / (1000 * 60 * 60 * 24));
-
-            // Render timeline header
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            for (let i = 0; i <= totalDays; i++) {
-                const currentDate = new Date(timelineStart);
-                currentDate.setDate(timelineStart.getDate() + i);
-
-                const cell = document.createElement('div');
-                cell.className = "flex-none flex flex-col items-center p-1 min-w-[40px] border-l border-gray-200";
-
-                const dayName = document.createElement('span');
-                dayName.className = "text-xs text-gray-500";
-                dayName.textContent = dayNames[currentDate.getDay()];
-                
-                const dateNumber = document.createElement('span');
-                dateNumber.className = "font-semibold text-sm";
-                dateNumber.textContent = currentDate.getDate();
-
-                cell.appendChild(dayName);
-                cell.appendChild(dateNumber);
-                timelineDatesContainer.appendChild(cell);
-            }
-
-            // Add today marker
-            const today = new Date();
-            const todayDiff = (today.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24);
-            if (todayDiff >= 0 && todayDiff <= totalDays) {
-                const todayMarker = document.createElement('div');
-                todayMarker.className = "today-marker absolute h-full";
-                todayMarker.style.left = `${256 + (todayDiff * 40)}px`;
-                timelineDatesContainer.appendChild(todayMarker);
-            }
-
-            const groupedTasks = filteredTasks.reduce((acc, task) => {
-                const phase = task.phase || 'Unphased';
-                const section = task.section || 'Unsectioned';
-                const subSection = task.subSection || 'Unsubsectioned';
-            
-                if (!acc[phase]) acc[phase] = { sections: {} };
-                if (!acc[phase].sections[section]) acc[phase].sections[section] = { subsections: {} };
-                if (!acc[phase].sections[section].subsections[subSection]) acc[phase].sections[section].subsections[subSection] = [];
-            
-                acc[phase].sections[section].subsections[subSection].push(task);
-                return acc;
-            }, {});
-
             const selectedSite = sites.find(s => s.id === selectedSiteId);
             if (selectedSite) {
                 const siteDiv = createCollapsibleDiv(selectedSite.name, 'site', 0, selectedSiteId);
-                const siteContent = siteDiv.querySelector('.collapsible-content');
                 taskListView.appendChild(siteDiv);
+            }
+            return;
+        } else if (!selectedSiteId) {
+            noTasksMessage.classList.remove('hidden');
+            return;
+        }
+        
+        noTasksMessage.classList.add('hidden');
 
-                Object.keys(groupedTasks).forEach(phaseName => {
-                    const phaseDiv = createCollapsibleDiv(phaseName, 'phase', 1, phaseName);
-                    const phaseContent = phaseDiv.querySelector('.collapsible-content');
-                    siteContent.appendChild(phaseDiv);
+        const allDates = filteredTasks.flatMap(task => [new Date(task.dueDate), new Date(task.endDate)]);
+        
+        const minDate = new Date(Math.min(...allDates));
+        const maxDate = new Date(Math.max(...allDates));
+        const timelineStart = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+        const timelineEnd = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
+        
+        // Add padding to the timeline
+        timelineStart.setDate(timelineStart.getDate() - 7);
+        timelineEnd.setDate(timelineEnd.getDate() + 7);
 
-                    Object.keys(groupedTasks[phaseName].sections).forEach(sectionName => {
-                        const sectionDiv = createCollapsibleDiv(sectionName, 'section', 2, sectionName);
-                        const sectionContent = sectionDiv.querySelector('.collapsible-content');
-                        phaseContent.appendChild(sectionDiv);
+        const totalDays = Math.ceil((timelineEnd - timelineStart) / (1000 * 60 * 60 * 24));
 
-                        Object.keys(groupedTasks[phaseName].sections[sectionName].subsections).forEach(subSectionName => {
-                            const subSectionDiv = createCollapsibleDiv(subSectionName, 'sub-section', 3, subSectionName);
-                            const subSectionContent = subSectionDiv.querySelector('.collapsible-content');
-                            sectionContent.appendChild(subSectionDiv);
+        // Render timeline header
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        for (let i = 0; i <= totalDays; i++) {
+            const currentDate = new Date(timelineStart);
+            currentDate.setDate(timelineStart.getDate() + i);
 
-                            groupedTasks[phaseName].sections[sectionName].subsections[subSectionName].forEach(task => {
-                                const dueDate = new Date(task.dueDate);
-                                const endDate = new Date(task.endDate);
-                                const actualStartDate = task.actualStartDate ? new Date(task.actualStartDate) : null;
-                                const actualEndDate = task.actualEndDate ? new Date(task.actualEndDate) : null;
+            const cell = document.createElement('div');
+            cell.className = "flex-none flex flex-col items-center p-1 min-w-[40px] border-l border-gray-200";
+
+            const dayName = document.createElement('span');
+            dayName.className = "text-xs text-gray-500";
+            dayName.textContent = dayNames[currentDate.getDay()];
+            
+            const dateNumber = document.createElement('span');
+            dateNumber.className = "font-semibold text-sm";
+            dateNumber.textContent = currentDate.getDate();
+
+            cell.appendChild(dayName);
+            cell.appendChild(dateNumber);
+            timelineDatesContainer.appendChild(cell);
+        }
+
+        // Add today marker
+        const today = new Date();
+        const todayDiff = (today.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24);
+        if (todayDiff >= 0 && todayDiff <= totalDays) {
+            const todayMarker = document.createElement('div');
+            todayMarker.className = "today-marker absolute h-full";
+            todayMarker.style.left = `calc(256px + ${todayDiff * 40}px)`;
+            timelineDatesContainer.appendChild(todayMarker);
+        }
+
+        const groupedTasks = filteredTasks.reduce((acc, task) => {
+            const phase = task.phase || 'Unphased';
+            const section = task.section || 'Unsectioned';
+            const subSection = task.subSection || 'Unsubsectioned';
+        
+            if (!acc[phase]) acc[phase] = { sections: {} };
+            if (!acc[phase].sections[section]) acc[phase].sections[section] = { subsections: {} };
+            if (!acc[phase].sections[section].subsections[subSection]) acc[phase].sections[section].subsections[subSection] = [];
+        
+            acc[phase].sections[section].subsections[subSection].push(task);
+            return acc;
+        }, {});
+
+        const selectedSite = sites.find(s => s.id === selectedSiteId);
+        if (selectedSite) {
+            const siteDiv = createCollapsibleDiv(selectedSite.name, 'site', 0, selectedSiteId);
+            const siteContent = siteDiv.querySelector('.collapsible-content');
+            taskListView.appendChild(siteDiv);
+
+            Object.keys(groupedTasks).forEach(phaseName => {
+                const phaseDiv = createCollapsibleDiv(phaseName, 'phase', 1, phaseName);
+                const phaseContent = phaseDiv.querySelector('.collapsible-content');
+                siteContent.appendChild(phaseDiv);
+
+                Object.keys(groupedTasks[phaseName].sections).forEach(sectionName => {
+                    const sectionDiv = createCollapsibleDiv(sectionName, 'section', 2, sectionName);
+                    const sectionContent = sectionDiv.querySelector('.collapsible-content');
+                    phaseContent.appendChild(sectionDiv);
+
+                    Object.keys(groupedTasks[phaseName].sections[sectionName].subsections).forEach(subSectionName => {
+                        const subSectionDiv = createCollapsibleDiv(subSectionName, 'sub-section', 3, subSectionName);
+                        const subSectionContent = subSectionDiv.querySelector('.collapsible-content');
+                        sectionContent.appendChild(subSectionDiv);
+
+                        groupedTasks[phaseName].sections[sectionName].subsections[subSectionName].forEach(task => {
+                            const dueDate = new Date(task.dueDate);
+                            const endDate = new Date(task.endDate);
+                            const actualStartDate = task.actualStartDate ? new Date(task.actualStartDate) : null;
+                            const actualEndDate = task.actualEndDate ? new Date(task.actualEndDate) : null;
+                            
+                            const startDay = Math.floor((dueDate.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24));
+                            const endDay = Math.ceil((endDate.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24));
+                            const durationInDays = endDay - startDay;
+
+                            const statusClass = getTaskStatus(task);
+                            
+                            const rowDiv = document.createElement('div');
+                            rowDiv.className = "flex items-center border-t border-gray-200 py-2 hover:bg-gray-50 transition-colors duration-200";
+                            
+                            const leftPanel = document.createElement('div');
+                            leftPanel.className = "flex-none w-64 pr-4 pl-12 text-sm";
+                            leftPanel.textContent = task.taskName;
+                            
+                            const timelinePanel = document.createElement('div');
+                            timelinePanel.className = "relative flex-grow h-10 border-l border-gray-200";
+
+                            const dueBar = document.createElement('div');
+                            dueBar.className = `task-bar task-bar-due ${statusClass}`;
+                            dueBar.style.left = `${startDay * 40}px`;
+                            dueBar.style.width = `${durationInDays * 40}px`;
+                            dueBar.title = `Due: ${formatDate(dueDate)} to ${formatDate(endDate)}`;
+                            
+                            dueBar.innerHTML = `
+                                <div class="flex items-center gap-1 w-full h-full">
+                                    <span>${task.taskName}</span>
+                                    <div class="ml-auto flex gap-2">
+                                        <button class="set-actual-start-btn text-white hover:text-gray-200" title="Set actual start date" data-task-id="${task.id}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" /></svg>
+                                        </button>
+                                        <button class="set-actual-end-btn text-white hover:text-gray-200" title="Set actual end date" data-task-id="${task.id}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+
+                            timelinePanel.appendChild(dueBar);
+                            
+                            if (actualStartDate && actualEndDate) {
+                                const actualStartDay = Math.floor((actualStartDate.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24));
+                                const actualEndDay = Math.ceil((actualEndDate.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24));
+                                const actualDurationInDays = actualEndDay - actualStartDay;
                                 
-                                const startDay = Math.floor((dueDate.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24));
-                                const endDay = Math.ceil((endDate.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24));
-                                const durationInDays = endDay - startDay;
-
-                                const actualStartDay = actualStartDate ? Math.floor((actualStartDate.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)) : null;
-                                const actualEndDay = actualEndDate ? Math.ceil((actualEndDate.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)) : null;
-                                const actualDurationInDays = (actualEndDay !== null && actualStartDay !== null) ? actualEndDay - actualStartDay : 0;
-                                
-                                const statusClass = getTaskStatus(task);
-                                
-                                const rowDiv = document.createElement('div');
-                                rowDiv.className = "flex items-center border-t border-gray-200 py-2 hover:bg-gray-50 transition-colors duration-200";
-                                rowDiv.innerHTML = `
-                                    <div class="flex-none w-64 pr-4 pl-12 text-sm">${task.taskName}</div>
-                                    <div class="relative flex-grow h-10 border-l border-gray-200">
-                                        <div 
-                                            class="task-bar task-bar-due ${statusClass}"
-                                            style="left: ${startDay * 40}px; width: ${durationInDays * 40}px;"
-                                            title="Due: ${formatDate(dueDate)} to ${formatDate(endDate)}">
-                                            <div class="flex items-center gap-1">
-                                                <span>${task.taskName}</span>
-                                                <div class="ml-auto flex gap-2">
-                                                    <button onclick="handleSetActualDate('${task.id}', 'Start')" class="text-white hover:text-gray-200" title="Set actual start date">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" /></svg>
-                                                    </button>
-                                                    <button onclick="handleSetActualDate('${task.id}', 'End')" class="text-white hover:text-gray-200" title="Set actual end date">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" /></svg>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            ${actualStartDate && actualEndDate ? `<div class="task-bar task-bar-actual ${statusClass}" style="left: ${actualStartDay * 40}px; width: ${actualDurationInDays * 40}px;" title="Actual: ${formatDate(actualStartDate)} to ${formatDate(actualEndDate)}"></div>` : ''}
-                                        </div>
-                                    `;
-                                subSectionContent.appendChild(rowDiv);
-                                });
-                            });
+                                const actualBar = document.createElement('div');
+                                actualBar.className = `task-bar task-bar-actual ${statusClass}`;
+                                actualBar.style.left = `${actualStartDay * 40}px`;
+                                actualBar.style.width = `${actualDurationInDays * 40}px`;
+                                actualBar.title = `Actual: ${formatDate(actualStartDate)} to ${formatDate(actualEndDate)}`;
+                                timelinePanel.appendChild(actualBar);
+                            }
+                            
+                            rowDiv.appendChild(leftPanel);
+                            rowDiv.appendChild(timelinePanel);
+                            subSectionContent.appendChild(rowDiv);
                         });
                     });
-                }
-            }
+                });
+            });
         }
+        
+        document.querySelectorAll('.set-actual-start-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const taskId = e.currentTarget.dataset.taskId;
+                handleSetActualDate(taskId, 'Start');
+            });
+        });
+
+        document.querySelectorAll('.set-actual-end-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const taskId = e.currentTarget.dataset.taskId;
+                handleSetActualDate(taskId, 'End');
+            });
+        });
     };
 
     const createCollapsibleDiv = (name, type, level, id) => {
@@ -297,32 +342,46 @@ window.onload = () => {
         const header = document.createElement('div');
         header.className = `collapsible-header flex-none w-64 pr-4 pl-6 py-2 border-r border-gray-200 hover:bg-gray-100 transition-colors duration-200`;
         
-        header.innerHTML = `
-            <div class="hierarchy-item-container flex items-center justify-between">
-                <div class="flex items-center" style="padding-left: ${padding}rem;">
-                    <svg class="w-4 h-4 mr-1 transform rotate-0 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                    <span class="font-bold text-sm text-gray-700" style="color: ${color};">${name}</span>
-                </div>
-                <div class="add-icon-group flex gap-1">
-                    ${level < 3 ? `
-                        <button onclick="showAddItemMenu('${id}', '${type}')" class="text-gray-500 hover:text-green-600 transition-colors" title="Add new ${type === 'site' ? 'phase' : (type === 'phase' ? 'section' : 'sub-section')}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                        </button>
-                    ` : ''}
-                    <button onclick="showAddItemMenu('${id}', '${type}')" class="text-gray-500 hover:text-blue-600 transition-colors" title="Add new task">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    </button>
-                </div>
+        const headerContent = document.createElement('div');
+        headerContent.className = `hierarchy-item-container flex items-center justify-between`;
+        headerContent.innerHTML = `
+            <div class="flex items-center" style="padding-left: ${padding}rem;">
+                <svg class="w-4 h-4 mr-1 transform rotate-0 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                <span class="font-bold text-sm text-gray-700" style="color: ${color};">${name}</span>
             </div>
+            <div class="add-icon-group flex gap-1"></div>
         `;
+
+        const addIconGroup = headerContent.querySelector('.add-icon-group');
+
+        if (level < 3) {
+            const addHierarchyBtn = document.createElement('button');
+            addHierarchyBtn.className = "text-gray-500 hover:text-green-600 transition-colors";
+            addHierarchyBtn.title = `Add new ${type === 'site' ? 'phase' : (type === 'phase' ? 'section' : 'sub-section')}`;
+            addHierarchyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>`;
+            addHierarchyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showAddItemMenu(id, type);
+            });
+            addIconGroup.appendChild(addHierarchyBtn);
+        }
+        
+        const addTaskBtn = document.createElement('button');
+        addTaskBtn.className = "text-gray-500 hover:text-blue-600 transition-colors";
+        addTaskBtn.title = "Add new task";
+        addTaskBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+        addTaskBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showAddTaskModal(id, type);
+        });
+        addIconGroup.appendChild(addTaskBtn);
+
+        header.appendChild(headerContent);
         
         const content = document.createElement('div');
         content.className = `collapsible-content`;
 
         header.addEventListener('click', (e) => {
-            if (e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) {
-                return;
-            }
             const icon = header.querySelector('svg');
             content.classList.toggle('expanded');
             icon.classList.toggle('rotate-180');
@@ -339,6 +398,14 @@ window.onload = () => {
     const showAddItemMenu = (parentId, parentType) => {
         window.parentHierarchyId = parentId;
         window.parentHierarchyType = parentType;
+        // Correctly enable/disable buttons based on hierarchy level
+        selectPhaseBtn.disabled = parentType !== 'site';
+        selectPhaseBtn.style.opacity = parentType !== 'site' ? 0.5 : 1;
+        selectSectionBtn.disabled = parentType !== 'site' && parentType !== 'phase';
+        selectSectionBtn.style.opacity = parentType !== 'site' && parentType !== 'phase' ? 0.5 : 1;
+        selectSubsectionBtn.disabled = parentType === 'subsection';
+        selectSubsectionBtn.style.opacity = parentType === 'subsection' ? 0.5 : 1;
+
         addItemSelectionModal.classList.remove('hidden');
     };
 
@@ -353,32 +420,13 @@ window.onload = () => {
         hierarchyNameInput.focus();
     };
 
-    const showAddTaskModal = () => {
-        const parentId = window.parentHierarchyId;
-        const parentType = window.parentHierarchyType;
+    const showAddTaskModal = (parentId, parentType) => {
+        // Set the parent hierarchy context for the new task
+        window.parentHierarchyId = parentId;
+        window.parentHierarchyType = parentType;
+
         addTaskForm.reset();
         
-        let phase = '';
-        let section = '';
-        let subSection = '';
-        if (parentType === 'phase') {
-            phase = parentId;
-        } else if (parentType === 'section') {
-            section = parentId;
-            const parentTask = tasks.find(t => t.section === parentId);
-            if (parentTask) phase = parentTask.phase;
-        } else if (parentType === 'sub-section') {
-            subSection = parentId;
-            const parentTask = tasks.find(t => t.subSection === parentId);
-            if (parentTask) {
-                section = parentTask.section;
-                phase = parentTask.phase;
-            }
-        } else if (parentType === 'site') {
-            // No pre-filling needed for top-level tasks
-        }
-        window.taskToCreateHierarchy = { phase, section, subSection };
-
         taskDependencySelect.innerHTML = '<option value="">-- No Dependency --</option>';
         tasks.forEach(task => {
             if (task.siteId === selectedSiteId) {
@@ -481,6 +529,8 @@ window.onload = () => {
 
     siteSelectHeader.addEventListener('change', (e) => {
         selectedSiteId = e.target.value;
+        const selectedSite = sites.find(s => s.id === selectedSiteId);
+        mainHeader.textContent = selectedSite ? selectedSite.name : 'Construction Progress Tracker';
         renderTasks();
     });
     
@@ -489,26 +539,24 @@ window.onload = () => {
         sitesBtn.classList.add('active');
         renderTasks();
     });
-
-    window.handleAddNewHierarchyItem = (parentId, parentType) => {
-        showAddItemMenu(parentId, parentType);
-    };
-
-    window.handleAddTaskFromHierarchy = (parentId, parentType) => {
-        showAddItemMenu(parentId, parentType);
-    };
     
     // --- Add Item Selection Modal Handlers ---
     selectPhaseBtn.addEventListener('click', () => {
-        showAddHierarchyModal('phase');
+        if (!selectPhaseBtn.disabled) {
+            showAddHierarchyModal('phase');
+        }
     });
     selectSectionBtn.addEventListener('click', () => {
-        showAddHierarchyModal('section');
+        if (!selectSectionBtn.disabled) {
+            showAddHierarchyModal('section');
+        }
     });
     selectSubsectionBtn.addEventListener('click', () => {
-        showAddHierarchyModal('subsection');
+        if (!selectSubsectionBtn.disabled) {
+            showAddHierarchyModal('subsection');
+        }
     });
-    selectTaskBtn.addEventListener('click', () => { showAddTaskModal(); });
+    selectTaskBtn.addEventListener('click', () => { showAddTaskModal(window.parentHierarchyId, window.parentHierarchyType); });
     cancelItemSelectionBtn.addEventListener('click', () => { addItemSelectionModal.classList.add('hidden'); });
 
     cancelAddTaskBtn.addEventListener('click', () => {
@@ -530,22 +578,23 @@ window.onload = () => {
         let phase = '';
         let section = '';
         let subSection = '';
+        
+        const parentId = window.parentHierarchyId;
+        const parentType = window.parentHierarchyType;
 
-        if (window.parentHierarchyType === 'phase') {
-            phase = window.parentHierarchyId;
-        } else if (window.parentHierarchyType === 'section') {
-            section = window.parentHierarchyId;
-            const parentTask = tasks.find(t => t.section === window.parentHierarchyId);
-            if (parentTask) phase = parentTask.phase;
-        } else if (window.parentHierarchyType === 'sub-section') {
-            subSection = window.parentHierarchyId;
-            const parentTask = tasks.find(t => t.subSection === window.parentHierarchyId);
-            if (parentTask) {
-                section = parentTask.section;
-                phase = parentTask.phase;
+        if (parentType === 'phase') {
+            phase = parentId;
+        } else if (parentType === 'section') {
+            section = parentId;
+            const parentPhaseTask = tasks.find(t => t.section === parentId);
+            if (parentPhaseTask) phase = parentPhaseTask.phase;
+        } else if (parentType === 'sub-section') {
+            subSection = parentId;
+            const parentSectionTask = tasks.find(t => t.subSection === parentId);
+            if (parentSectionTask) {
+                section = parentSectionTask.section;
+                phase = parentSectionTask.phase;
             }
-        } else if (window.parentHierarchyType === 'site') {
-            // No pre-filling needed for top-level tasks
         }
         
         const newTask = {
@@ -568,14 +617,24 @@ window.onload = () => {
         addTaskModal.classList.add('hidden');
     });
     
-    window.handleSetActualDate = (taskId, type) => {
+    const handleSetActualDate = (taskId, type) => {
         const taskIndex = tasks.findIndex(task => task.id === taskId);
         if (taskIndex !== -1) {
-            tasks[taskIndex][`actual${type}Date`] = new Date().toISOString();
+            if (type === 'Start' && tasks[taskIndex].actualStartDate === null) {
+                tasks[taskIndex].actualStartDate = new Date().toISOString();
+            } else if (type === 'End' && tasks[taskIndex].actualEndDate === null && tasks[taskIndex].actualStartDate !== null) {
+                 tasks[taskIndex].actualEndDate = new Date().toISOString();
+            }
             saveToLocalStorage();
             renderTasks();
         }
     };
+
+    // Make the function available globally for the initial `no-tasks-message` button
+    window.showAddItemMenu = showAddItemMenu;
+    window.showAddTaskModal = showAddTaskModal;
+    window.handleSetActualDate = handleSetActualDate;
+
 
     // --- Initial Load ---
     loadFromLocalStorage();
