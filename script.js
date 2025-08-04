@@ -276,25 +276,40 @@ window.onload = () => {
                             timelinePanel.className = "relative flex-grow h-10 border-l border-gray-200";
 
                             const dueBar = document.createElement('div');
-                            dueBar.className = `task-bar task-bar-due ${statusClass}`;
+                            dueBar.className = `task-bar task-bar-due`;
                             dueBar.style.left = `${startDay * 40}px`;
                             dueBar.style.width = `${durationInDays * 40}px`;
                             dueBar.title = `Due: ${formatDate(dueDate)} to ${formatDate(endDate)}`;
                             
-                            dueBar.innerHTML = `
-                                <div class="flex items-center gap-1 w-full h-full">
-                                    <span>${task.taskName}</span>
-                                    <div class="ml-auto flex gap-2">
-                                        <button class="set-actual-start-btn text-white hover:text-gray-200" title="Set actual start date" data-task-id="${task.id}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" /></svg>
-                                        </button>
-                                        <button class="set-actual-end-btn text-white hover:text-gray-200" title="Set actual end date" data-task-id="${task.id}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" /></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
+                            const dueBarContent = document.createElement('div');
+                            dueBarContent.className = "flex items-center gap-1 w-full h-full";
+                            dueBarContent.innerHTML = `<span>${task.taskName}</span>`;
 
+                            const actionButtons = document.createElement('div');
+                            actionButtons.className = "ml-auto flex gap-2";
+
+                            const setStartBtn = document.createElement('button');
+                            setStartBtn.className = "set-actual-start-btn text-white hover:text-gray-200";
+                            setStartBtn.title = "Set actual start date";
+                            setStartBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" /></svg>`;
+                            setStartBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                handleSetActualDate(task.id, 'Start');
+                            });
+                            actionButtons.appendChild(setStartBtn);
+
+                            const setEndBtn = document.createElement('button');
+                            setEndBtn.className = "set-actual-end-btn text-white hover:text-gray-200";
+                            setEndBtn.title = "Set actual end date";
+                            setEndBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3V2h-2v2h-4V2H8v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" /></svg>`;
+                            setEndBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                handleSetActualDate(task.id, 'End');
+                            });
+                            actionButtons.appendChild(setEndBtn);
+
+                            dueBarContent.appendChild(actionButtons);
+                            dueBar.appendChild(dueBarContent);
                             timelinePanel.appendChild(dueBar);
                             
                             if (actualStartDate && actualEndDate) {
@@ -318,20 +333,6 @@ window.onload = () => {
                 });
             });
         }
-        
-        document.querySelectorAll('.set-actual-start-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const taskId = e.currentTarget.dataset.taskId;
-                handleSetActualDate(taskId, 'Start');
-            });
-        });
-
-        document.querySelectorAll('.set-actual-end-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const taskId = e.currentTarget.dataset.taskId;
-                handleSetActualDate(taskId, 'End');
-            });
-        });
     };
 
     const createCollapsibleDiv = (name, type, level, id) => {
