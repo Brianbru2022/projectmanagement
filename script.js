@@ -5,6 +5,8 @@ window.onload = () => {
     const mainHeader = document.getElementById('main-header');
     const settingsBtn = document.getElementById('settings-btn');
     const sitesBtn = document.getElementById('sites-btn');
+    const dashboardBtn = document.getElementById('dashboard-btn');
+    const reportsBtn = document.getElementById('reports-btn');
     const taskListView = document.getElementById('timeline-content');
     const timelineDatesContainer = document.getElementById('timeline-dates');
     const noTasksMessage = document.getElementById('no-tasks-message');
@@ -48,7 +50,7 @@ window.onload = () => {
     let parentHierarchyId = '';
     let parentHierarchyType = '';
     let siteToDeleteId = '';
-    
+
     // --- Helper Functions ---
     const formatDate = (date) => {
         if (!date) return '';
@@ -152,7 +154,14 @@ window.onload = () => {
             noTasksMessage.classList.add('hidden');
 
             const allDates = filteredTasks.flatMap(task => [new Date(task.dueDate), new Date(task.endDate)]);
-            if (allDates.length === 0) return;
+            if (allDates.length === 0) {
+                const selectedSite = sites.find(s => s.id === selectedSiteId);
+                if (selectedSite) {
+                    const siteDiv = createCollapsibleDiv(selectedSite.name, 'site', 0, selectedSiteId);
+                    taskListView.appendChild(siteDiv);
+                }
+                return;
+            }
             
             const minDate = new Date(Math.min(...allDates));
             const maxDate = new Date(Math.max(...allDates));
@@ -277,334 +286,310 @@ window.onload = () => {
                     });
                 }
             }
-        };
-
-        const createCollapsibleDiv = (name, type, level, id) => {
-            const div = document.createElement('div');
-            const color = generateColor(id);
-            const padding = (level * 2) + 1;
-            
-            const header = document.createElement('div');
-            header.className = `collapsible-header flex-none w-64 pr-4 pl-6 py-2 border-r border-gray-200 hover:bg-gray-100 transition-colors duration-200`;
-            
-            header.innerHTML = `
-                <div class="hierarchy-item-container flex items-center justify-between">
-                    <div class="flex items-center" style="padding-left: ${padding}rem;">
-                        <svg class="w-4 h-4 mr-1 transform rotate-0 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                        <span class="font-bold text-sm text-gray-700" style="color: ${color};">${name}</span>
-                    </div>
-                    <div class="add-icon-group flex gap-1">
-                        ${level < 3 ? `
-                            <button onclick="showAddItemMenu('${id}', '${type}')" class="text-gray-500 hover:text-green-600 transition-colors" title="Add new ${type === 'site' ? 'phase' : (type === 'phase' ? 'section' : 'sub-section')}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                            </button>
-                        ` : ''}
-                        <button onclick="showAddItemMenu('${id}', '${type}')" class="text-gray-500 hover:text-blue-600 transition-colors" title="Add new task">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            const content = document.createElement('div');
-            content.className = `collapsible-content`;
-
-            header.addEventListener('click', (e) => {
-                if (e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) {
-                    return;
-                }
-                const icon = header.querySelector('svg');
-                content.classList.toggle('expanded');
-                icon.classList.toggle('rotate-180');
-            });
-
-            const timelineRow = document.createElement('div');
-            timelineRow.className = `flex flex-col border-b border-gray-200`;
-            timelineRow.appendChild(header);
-            timelineRow.appendChild(content);
-
-            return timelineRow;
-        };
-
-        const showAddItemMenu = (parentId, parentType) => {
-            window.parentHierarchyId = parentId;
-            window.parentHierarchyType = parentType;
-            addItemSelectionModal.classList.remove('hidden');
-        };
-
-        const showAddHierarchyModal = (type) => {
-            let title = `Enter a new ${type} name:`;
-            if (type === 'site') title = `Enter a new site name:`;
-            addHierarchyTitle.textContent = title;
-            hierarchyNameInput.value = '';
-            window.hierarchyTypeToAdd = type;
-            addItemSelectionModal.classList.add('hidden');
-            addHierarchyModal.classList.remove('hidden');
-            hierarchyNameInput.focus();
-        };
-
-        const showAddTaskModal = () => {
-            const parentId = window.parentHierarchyId;
-            const parentType = window.parentHierarchyType;
-            addTaskForm.reset();
-            
-            let phase = '';
-            let section = '';
-            let subSection = '';
-            if (parentType === 'phase') {
-                phase = parentId;
-            } else if (parentType === 'section') {
-                section = parentId;
-                const parentTask = tasks.find(t => t.section === parentId);
-                if (parentTask) phase = parentTask.phase;
-            } else if (parentType === 'sub-section') {
-                subSection = parentId;
-                const parentTask = tasks.find(t => t.subSection === parentId);
-                if (parentTask) {
-                    section = parentTask.section;
-                    phase = parentTask.phase;
-                }
-            } else if (parentType === 'site') {
-                // No pre-filling needed for top-level tasks
-            }
-            window.taskToCreateHierarchy = { phase, section, subSection };
-
-            taskDependencySelect.innerHTML = '<option value="">-- No Dependency --</option>';
-            tasks.forEach(task => {
-                if (task.siteId === selectedSiteId) {
-                    const option = document.createElement('option');
-                    option.value = task.id;
-                    option.textContent = task.taskName;
-                    taskDependencySelect.appendChild(option);
-                }
-            });
-
-            addItemSelectionModal.classList.add('hidden');
-            addTaskModal.classList.remove('hidden');
-        };
-
-
-        // --- Event Handlers ---
-        settingsBtn.addEventListener('click', () => {
-            settingsModal.classList.remove('hidden');
-        });
-
-        closeSettingsBtn.addEventListener('click', () => {
-            settingsModal.classList.add('hidden');
-        });
-
-        manageSitesOption.addEventListener('click', () => {
-            settingsModal.classList.add('hidden');
-            renderSitesToRemove();
-            manageSitesModal.classList.remove('hidden');
-        });
-        
-        addNewSiteOption.addEventListener('click', () => {
-            manageSitesModal.classList.add('hidden');
-            addHierarchyTitle.textContent = "Enter a new site name:";
-            hierarchyNameInput.value = '';
-            hierarchyTypeToAdd = 'site';
-            addHierarchyModal.classList.remove('hidden');
-            hierarchyNameInput.focus();
-        });
-
-        closeManageSitesBtn.addEventListener('click', () => {
-            manageSitesModal.classList.add('hidden');
-            renderSites();
-        });
-
-        const renderSitesToRemove = () => {
-            siteListToRemove.innerHTML = '';
-            sites.forEach(site => {
-                const li = document.createElement('li');
-                li.className = "flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 transition-colors";
-                li.innerHTML = `
-                    <span>${site.name}</span>
-                    <button data-site-id="${site.id}" class="remove-site-btn text-red-500 hover:text-red-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    </button>
-                `;
-                siteListToRemove.appendChild(li);
-            });
-            document.querySelectorAll('.remove-site-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    siteToDeleteId = e.currentTarget.dataset.siteId;
-                    confirmModal.classList.remove('hidden');
-                });
-            });
-        };
-
-        confirmOkBtn.addEventListener('click', () => {
-            sites = sites.filter(s => s.id !== siteToDeleteId);
-            tasks = tasks.filter(t => t.siteId !== siteToDeleteId);
-            saveToLocalStorage();
-            renderSitesToRemove();
-            confirmModal.classList.add('hidden');
-        });
-
-        confirmCancelBtn.addEventListener('click', () => {
-            confirmModal.classList.add('hidden');
-        });
-
-
-        cancelHierarchyBtn.addEventListener('click', () => {
-            addHierarchyModal.classList.add('hidden');
-        });
-
-        okHierarchyBtn.addEventListener('click', () => {
-            const name = hierarchyNameInput.value.trim();
-            if (name) {
-                if (hierarchyTypeToAdd === 'site') {
-                    const newSiteId = Date.now().toString();
-                    sites.push({ id: newSiteId, name });
-                    selectedSiteId = newSiteId;
-                } else if (hierarchyTypeToAdd === 'phase') {
-                    if (!phases.includes(name)) phases.push(name);
-                    tasks.push({
-                        id: Date.now().toString(),
-                        siteId: selectedSiteId,
-                        taskName: name,
-                        phase: name,
-                        section: null,
-                        subSection: null,
-                        dueDate: null,
-                        endDate: null,
-                        actualStartDate: null,
-                        actualEndDate: null,
-                        dependentOnTaskId: null
-                    });
-                } else if (hierarchyTypeToAdd === 'section') {
-                    if (!sections.includes(name)) sections.push(name);
-                     tasks.push({
-                        id: Date.now().toString(),
-                        siteId: selectedSiteId,
-                        taskName: name,
-                        phase: window.parentHierarchyId,
-                        section: name,
-                        subSection: null,
-                        dueDate: null,
-                        endDate: null,
-                        actualStartDate: null,
-                        actualEndDate: null,
-                        dependentOnTaskId: null
-                    });
-                } else if (hierarchyTypeToAdd === 'subsection') {
-                    if (!subsections.includes(name)) subsections.push(name);
-                    tasks.push({
-                        id: Date.now().toString(),
-                        siteId: selectedSiteId,
-                        taskName: name,
-                        phase: tasks.find(t => t.section === window.parentHierarchyId).phase,
-                        section: window.parentHierarchyId,
-                        subSection: name,
-                        dueDate: null,
-                        endDate: null,
-                        actualStartDate: null,
-                        actualEndDate: null,
-                        dependentOnTaskId: null
-                    });
-                }
-                saveToLocalStorage();
-                renderSites();
-                addHierarchyModal.classList.add('hidden');
-            }
-        });
-
-        siteSelectHeader.addEventListener('change', (e) => {
-            selectedSiteId = e.target.value;
-            renderTasks();
-        });
-        
-        sitesBtn.addEventListener('click', () => {
-            document.querySelectorAll('.sidebar-icon-btn').forEach(btn => btn.classList.remove('active'));
-            sitesBtn.classList.add('active');
-            renderTasks();
-        });
-
-        window.handleAddNewHierarchyItem = (parentId, parentType) => {
-            showAddItemMenu(parentId, parentType);
-        };
-
-        window.handleAddTaskFromHierarchy = (parentId, parentType) => {
-            showAddItemMenu(parentId, parentType);
-        };
-        
-        // --- Add Item Selection Modal Handlers ---
-        selectPhaseBtn.addEventListener('click', () => { showAddHierarchyModal('phase'); });
-        selectSectionBtn.addEventListener('click', () => { showAddHierarchyModal('section'); });
-        selectSubsectionBtn.addEventListener('click', () => { showAddHierarchyModal('subsection'); });
-        selectTaskBtn.addEventListener('click', () => { showAddTaskModal(); });
-        cancelItemSelectionBtn.addEventListener('click', () => { addItemSelectionModal.classList.add('hidden'); });
-
-        cancelAddTaskBtn.addEventListener('click', () => {
-            addTaskModal.classList.add('hidden');
-        });
-
-        addTaskForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const dependentTask = tasks.find(t => t.id === taskDependencySelect.value);
-            let newDueDate = taskDueDateInput.value;
-            if (dependentTask) {
-                const dependentEndDate = new Date(dependentTask.endDate);
-                const oneDay = 24 * 60 * 60 * 1000;
-                dependentEndDate.setTime(dependentEndDate.getTime() + oneDay);
-                newDueDate = dateToYMD(dependentEndDate);
-            }
-            
-            let phase = '';
-            let section = '';
-            let subSection = '';
-
-            if (window.parentHierarchyType === 'phase') {
-                phase = window.parentHierarchyId;
-            } else if (window.parentHierarchyType === 'section') {
-                section = window.parentHierarchyId;
-                const parentTask = tasks.find(t => t.section === window.parentHierarchyId);
-                if (parentTask) phase = parentTask.phase;
-            } else if (window.parentHierarchyType === 'sub-section') {
-                subSection = window.parentHierarchyId;
-                const parentTask = tasks.find(t => t.subSection === window.parentHierarchyId);
-                if (parentTask) {
-                    section = parentTask.section;
-                    phase = parentTask.phase;
-                }
-            } else if (window.parentHierarchyType === 'site') {
-                // No pre-filling needed for top-level tasks
-            }
-            
-            const newTask = {
-                id: Date.now().toString(),
-                siteId: selectedSiteId,
-                taskName: taskNameInput.value,
-                phase: window.taskToCreateHierarchy.phase,
-                section: window.taskToCreateHierarchy.section,
-                subSection: window.taskToCreateHierarchy.subSection,
-                dueDate: newDueDate,
-                endDate: taskEndDateInput.value,
-                actualStartDate: null,
-                actualEndDate: null,
-                dependentOnTaskId: taskDependencySelect.value
-            };
-            tasks.push(newTask);
-            
-            saveToLocalStorage();
-            renderTasks();
-            addTaskModal.classList.add('hidden');
-        });
-        
-        window.handleSetActualDate = (taskId, type) => {
-            const taskIndex = tasks.findIndex(task => task.id === taskId);
-            if (taskIndex !== -1) {
-                tasks[taskIndex][`actual${type}Date`] = new Date().toISOString();
-                saveToLocalStorage();
-                renderTasks();
-            }
-        };
-
-        // --- Initial Load ---
-        window.onload = () => {
-            loadFromLocalStorage();
-            renderSites();
-        };
+        }
     };
+
+    const createCollapsibleDiv = (name, type, level, id) => {
+        const div = document.createElement('div');
+        const color = generateColor(id);
+        const padding = (level * 2) + 1;
+        
+        const header = document.createElement('div');
+        header.className = `collapsible-header flex-none w-64 pr-4 pl-6 py-2 border-r border-gray-200 hover:bg-gray-100 transition-colors duration-200`;
+        
+        header.innerHTML = `
+            <div class="hierarchy-item-container flex items-center justify-between">
+                <div class="flex items-center" style="padding-left: ${padding}rem;">
+                    <svg class="w-4 h-4 mr-1 transform rotate-0 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="font-bold text-sm text-gray-700" style="color: ${color};">${name}</span>
+                </div>
+                <div class="add-icon-group flex gap-1">
+                    ${level < 3 ? `
+                        <button onclick="showAddItemMenu('${id}', '${type}')" class="text-gray-500 hover:text-green-600 transition-colors" title="Add new ${type === 'site' ? 'phase' : (type === 'phase' ? 'section' : 'sub-section')}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                        </button>
+                    ` : ''}
+                    <button onclick="showAddItemMenu('${id}', '${type}')" class="text-gray-500 hover:text-blue-600 transition-colors" title="Add new task">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        const content = document.createElement('div');
+        content.className = `collapsible-content`;
+
+        header.addEventListener('click', (e) => {
+            if (e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) {
+                return;
+            }
+            const icon = header.querySelector('svg');
+            content.classList.toggle('expanded');
+            icon.classList.toggle('rotate-180');
+        });
+
+        const timelineRow = document.createElement('div');
+        timelineRow.className = `flex flex-col border-b border-gray-200`;
+        timelineRow.appendChild(header);
+        timelineRow.appendChild(content);
+
+        return timelineRow;
+    };
+
+    const showAddItemMenu = (parentId, parentType) => {
+        window.parentHierarchyId = parentId;
+        window.parentHierarchyType = parentType;
+        addItemSelectionModal.classList.remove('hidden');
+    };
+
+    const showAddHierarchyModal = (type) => {
+        let title = `Enter a new ${type} name:`;
+        if (type === 'site') title = `Enter a new site name:`;
+        addHierarchyTitle.textContent = title;
+        hierarchyNameInput.value = '';
+        window.hierarchyTypeToAdd = type;
+        addItemSelectionModal.classList.add('hidden');
+        addHierarchyModal.classList.remove('hidden');
+        hierarchyNameInput.focus();
+    };
+
+    const showAddTaskModal = () => {
+        const parentId = window.parentHierarchyId;
+        const parentType = window.parentHierarchyType;
+        addTaskForm.reset();
+        
+        let phase = '';
+        let section = '';
+        let subSection = '';
+        if (parentType === 'phase') {
+            phase = parentId;
+        } else if (parentType === 'section') {
+            section = parentId;
+            const parentTask = tasks.find(t => t.section === parentId);
+            if (parentTask) phase = parentTask.phase;
+        } else if (parentType === 'sub-section') {
+            subSection = parentId;
+            const parentTask = tasks.find(t => t.subSection === parentId);
+            if (parentTask) {
+                section = parentTask.section;
+                phase = parentTask.phase;
+            }
+        } else if (parentType === 'site') {
+            // No pre-filling needed for top-level tasks
+        }
+        window.taskToCreateHierarchy = { phase, section, subSection };
+
+        taskDependencySelect.innerHTML = '<option value="">-- No Dependency --</option>';
+        tasks.forEach(task => {
+            if (task.siteId === selectedSiteId) {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.taskName;
+                taskDependencySelect.appendChild(option);
+            }
+        });
+
+        addItemSelectionModal.classList.add('hidden');
+        addTaskModal.classList.remove('hidden');
+    };
+
+    // --- Event Handlers ---
+    settingsBtn.addEventListener('click', () => {
+        settingsModal.classList.remove('hidden');
+    });
+
+    closeSettingsBtn.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+    });
+
+    manageSitesOption.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+        renderSitesToRemove();
+        manageSitesModal.classList.remove('hidden');
+    });
+    
+    addNewSiteOption.addEventListener('click', () => {
+        manageSitesModal.classList.add('hidden');
+        addHierarchyTitle.textContent = "Enter a new site name:";
+        hierarchyNameInput.value = '';
+        hierarchyTypeToAdd = 'site';
+        addHierarchyModal.classList.remove('hidden');
+        hierarchyNameInput.focus();
+    });
+
+    closeManageSitesBtn.addEventListener('click', () => {
+        manageSitesModal.classList.add('hidden');
+        renderSites();
+    });
+
+    const renderSitesToRemove = () => {
+        siteListToRemove.innerHTML = '';
+        sites.forEach(site => {
+            const li = document.createElement('li');
+            li.className = "flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 transition-colors";
+            li.innerHTML = `
+                <span>${site.name}</span>
+                <button data-site-id="${site.id}" class="remove-site-btn text-red-500 hover:text-red-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
+            `;
+            siteListToRemove.appendChild(li);
+        });
+        document.querySelectorAll('.remove-site-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                siteToDeleteId = e.currentTarget.dataset.siteId;
+                confirmModal.classList.remove('hidden');
+            });
+        });
+    };
+
+    confirmOkBtn.addEventListener('click', () => {
+        sites = sites.filter(s => s.id !== siteToDeleteId);
+        tasks = tasks.filter(t => t.siteId !== siteToDeleteId);
+        saveToLocalStorage();
+        renderSitesToRemove();
+        confirmModal.classList.add('hidden');
+    });
+
+    confirmCancelBtn.addEventListener('click', () => {
+        confirmModal.classList.add('hidden');
+    });
+
+    cancelHierarchyBtn.addEventListener('click', () => {
+        addHierarchyModal.classList.add('hidden');
+    });
+
+    okHierarchyBtn.addEventListener('click', () => {
+        const name = hierarchyNameInput.value.trim();
+        if (name) {
+            if (hierarchyTypeToAdd === 'site') {
+                const newSiteId = Date.now().toString();
+                sites.push({ id: newSiteId, name });
+                selectedSiteId = newSiteId;
+            } else if (hierarchyTypeToAdd === 'phase') {
+                if (!phases.includes(name)) phases.push(name);
+            } else if (hierarchyTypeToAdd === 'section') {
+                if (!sections.includes(name)) sections.push(name);
+            } else if (hierarchyTypeToAdd === 'subsection') {
+                if (!subsections.includes(name)) subsections.push(name);
+            }
+            saveToLocalStorage();
+            renderSites();
+            addHierarchyModal.classList.add('hidden');
+        }
+    });
+
+    siteSelectHeader.addEventListener('change', (e) => {
+        selectedSiteId = e.target.value;
+        renderTasks();
+    });
+    
+    sitesBtn.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-icon-btn').forEach(btn => btn.classList.remove('active'));
+        sitesBtn.classList.add('active');
+        renderTasks();
+    });
+
+    window.handleAddNewHierarchyItem = (parentId, parentType) => {
+        showAddItemMenu(parentId, parentType);
+    };
+
+    window.handleAddTaskFromHierarchy = (parentId, parentType) => {
+        showAddItemMenu(parentId, parentType);
+    };
+    
+    // --- Add Item Selection Modal Handlers ---
+    selectPhaseBtn.addEventListener('click', () => {
+        if (window.parentHierarchyType === 'site') {
+            showAddHierarchyModal('phase');
+        } else {
+            showAddItemMenu(window.parentHierarchyId, window.parentHierarchyType);
+        }
+    });
+    selectSectionBtn.addEventListener('click', () => {
+        if (window.parentHierarchyType === 'phase') {
+            showAddHierarchyModal('section');
+        } else {
+            showAddItemMenu(window.parentHierarchyId, window.parentHierarchyType);
+        }
+    });
+    selectSubsectionBtn.addEventListener('click', () => {
+        if (window.parentHierarchyType === 'section') {
+            showAddHierarchyModal('subsection');
+        } else {
+            showAddItemMenu(window.parentHierarchyId, window.parentHierarchyType);
+        }
+    });
+    selectTaskBtn.addEventListener('click', () => { showAddTaskModal(); });
+    cancelItemSelectionBtn.addEventListener('click', () => { addItemSelectionModal.classList.add('hidden'); });
+
+    cancelAddTaskBtn.addEventListener('click', () => {
+        addTaskModal.classList.add('hidden');
+    });
+
+    addTaskForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const dependentTask = tasks.find(t => t.id === taskDependencySelect.value);
+        let newDueDate = taskDueDateInput.value;
+        if (dependentTask) {
+            const dependentEndDate = new Date(dependentTask.endDate);
+            const oneDay = 24 * 60 * 60 * 1000;
+            dependentEndDate.setTime(dependentEndDate.getTime() + oneDay);
+            newDueDate = dateToYMD(dependentEndDate);
+        }
+        
+        let phase = '';
+        let section = '';
+        let subSection = '';
+
+        if (window.parentHierarchyType === 'phase') {
+            phase = window.parentHierarchyId;
+        } else if (window.parentHierarchyType === 'section') {
+            section = window.parentHierarchyId;
+            const parentTask = tasks.find(t => t.section === window.parentHierarchyId);
+            if (parentTask) phase = parentTask.phase;
+        } else if (window.parentHierarchyType === 'sub-section') {
+            subSection = window.parentHierarchyId;
+            const parentTask = tasks.find(t => t.subSection === window.parentHierarchyId);
+            if (parentTask) {
+                section = parentTask.section;
+                phase = parentTask.phase;
+            }
+        } else if (window.parentHierarchyType === 'site') {
+            // No pre-filling needed for top-level tasks
+        }
+        
+        const newTask = {
+            id: Date.now().toString(),
+            siteId: selectedSiteId,
+            taskName: taskNameInput.value,
+            phase: phase,
+            section: section,
+            subSection: subSection,
+            dueDate: newDueDate,
+            endDate: taskEndDateInput.value,
+            actualStartDate: null,
+            actualEndDate: null,
+            dependentOnTaskId: taskDependencySelect.value
+        };
+        tasks.push(newTask);
+        
+        saveToLocalStorage();
+        renderSites();
+        addTaskModal.classList.add('hidden');
+    });
+    
+    window.handleSetActualDate = (taskId, type) => {
+        const taskIndex = tasks.findIndex(task => task.id === taskId);
+        if (taskIndex !== -1) {
+            tasks[taskIndex][`actual${type}Date`] = new Date().toISOString();
+            saveToLocalStorage();
+            renderTasks();
+        }
+    };
+
+    // --- Initial Load ---
+    loadFromLocalStorage();
+    renderSites();
+};
