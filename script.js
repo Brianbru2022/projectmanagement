@@ -13,7 +13,7 @@ window.onload = () => {
     const addTaskModal = document.getElementById('add-task-modal');
     const addHierarchyModal = document.getElementById('add-hierarchy-modal');
     const addTaskForm = document.getElementById('add-task-form');
-    const taskNameInput = document.getElementById('task-name');
+    const taskNameInput = document = document.getElementById('task-name');
     const taskDueDateInput = document.getElementById('task-due-date');
     const taskEndDateInput = document.getElementById('task-end-date');
     const taskDependencySelect = document.getElementById('task-dependency-select');
