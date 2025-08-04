@@ -13,7 +13,7 @@ window.onload = () => {
     const addTaskModal = document.getElementById('add-task-modal');
     const addHierarchyModal = document.getElementById('add-hierarchy-modal');
     const addTaskForm = document.getElementById('add-task-form');
-    const taskNameInput = document = document.getElementById('task-name');
+    const taskNameInput = document.getElementById('task-name');
     const taskDueDateInput = document.getElementById('task-due-date');
     const taskEndDateInput = document.getElementById('task-end-date');
     const taskDependencySelect = document.getElementById('task-dependency-select');
@@ -249,7 +249,7 @@ window.onload = () => {
                     phaseContent.appendChild(sectionDiv);
 
                     Object.keys(groupedTasks[phaseName].sections[sectionName].subsections).forEach(subSectionName => {
-                        const subSectionDiv = createCollapsibleDiv(subSectionName, 'sub-section', 3, subSectionName);
+                        const subSectionDiv = createCollapsibleDiv(subSectionName, 'subsection', 3, subSectionName);
                         const subSectionContent = subSectionDiv.querySelector('.collapsible-content');
                         sectionContent.appendChild(subSectionDiv);
 
@@ -281,9 +281,9 @@ window.onload = () => {
                             dueBar.style.width = `${durationInDays * 40}px`;
                             dueBar.title = `Due: ${formatDate(dueDate)} to ${formatDate(endDate)}`;
                             
+                            // no inner text – the bar is purely visual
                             const dueBarContent = document.createElement('div');
-                            dueBarContent.className = "flex items-center gap-1 w-full h-full";
-                            dueBarContent.innerHTML = `<span>${task.taskName}</span>`;
+                            dueBarContent.className = "w-full h-full";
 
                             const actionButtons = document.createElement('div');
                             actionButtons.className = "ml-auto flex gap-2";
@@ -367,6 +367,8 @@ window.onload = () => {
             addIconGroup.appendChild(addHierarchyBtn);
         }
         
+        // only show “+ Task” when you’re _not_ at the top-level site
+        if (type !== 'site') {
         const addTaskBtn = document.createElement('button');
         addTaskBtn.className = "text-gray-500 hover:text-blue-600 transition-colors";
         addTaskBtn.title = "Add new task";
@@ -376,7 +378,7 @@ window.onload = () => {
             showAddTaskModal(id, type);
         });
         addIconGroup.appendChild(addTaskBtn);
-
+        }
         header.appendChild(headerContent);
         
         const content = document.createElement('div');
@@ -553,7 +555,7 @@ window.onload = () => {
         }
     });
     selectSubsectionBtn.addEventListener('click', () => {
-        if (!selectSubsectionBtn.disabled) {
+        if (!selectSubsectionBtn.disabled) showAddHierarchyModal('subsection');
             showAddHierarchyModal('subsection');
         }
     });
